@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Магазин с горизонтальной прокруткой</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://vjs.zencdn.net/7.17.0/video-js.css" rel="stylesheet">
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden;
+        }
+
+        .horizontal-scroll {
+            display: flex;
+            flex-direction: row;
+            height: 100vh;
+            width: max-content;
+        }
+
+        .section {
+            width: 100vw;
+            height: 100vh;
+            flex-shrink: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            scroll-snap-align: start;
+        }
+
+        .container {
+            scroll-snap-type: x mandatory;
+            overflow-x: scroll;
+            overflow-y: hidden;
+            height: 100vh;
+            width: 100vw;
+            max-width: 100% !important;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .cart-item {
+            transition: all 0.3s ease;
+        }
+
+        .cart-item-remove {
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .cart-item:hover .cart-item-remove {
+            opacity: 1;
+        }
+
+        .video-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            z-index: -1;
+            /* чтобы видео было под всем остальным */
+        }
+
+        .video-background video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Стили для секции с товарами */
+        .products-section {
+            align-items: flex-start;
+            padding-top: 2rem;
+            overflow-y: auto;
+        }
+
+        .products-container {
+            width: 100%;
+            max-height: calc(100vh - 6rem);
+            overflow-y: auto;
+            padding-bottom: 2rem;
+        }
+
+        /* Скрыть скроллбар для Chrome, Safari и Opera */
+        .products-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Скрыть скроллбар для IE, Edge и Firefox */
+        .products-container {
+            -ms-overflow-style: none;
+            /* IE и Edge */
+            scrollbar-width: none;
+            /* Firefox */
+        }
+    </style>
+</head>
+
+<body class="m-0 p-0">
+    <!-- Иконка корзины с количеством товаров -->
+    <div class="fixed top-4 right-4 z-50">
+        <div class="relative">
+            <button onclick="toggleCart()" class="bg-white p-3 rounded-full shadow-lg hover:bg-gray-100 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <span id="cart-count"
+                    class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">0</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Боковая панель корзины -->
+    <div id="cart-sidebar"
+        class="fixed top-0 right-0 h-full w-80 bg-white shadow-lg transform translate-x-full transition-transform duration-300 z-40">
+        <div class="p-4 h-full flex flex-col">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="text-lg font-bold">Ваша корзина</h3>
+                <button onclick="toggleCart()" class="text-gray-500 hover:text-gray-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd"
+                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                            clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+            <div id="cart-items" class="flex-1 overflow-y-auto py-4">
+                <!-- Товары будут добавляться сюда -->
+                <p class="text-gray-500 text-center py-10">Корзина пуста</p>
+            </div>
+            <div class="border-t pt-3">
+                <div class="flex justify-between font-bold mb-4">
+                    <span>Итого:</span>
+                    <span id="cart-total">0 ₽</span>
+                </div>
+                <button class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded transition">
+                    Оформить заказ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="video-background">
+        <video autoplay muted loop playsinline>
+            <source src="0_Abstract_Geometric_3840x2160.mp4" type="video/mp4" />
+        </video>
+    </div>
+
+    <div class="container">
+        <div class="horizontal-scroll">
+            <!-- Секция 1 -->
+            <section class="section bg-transparent">
+                <div class="text-center p-8">
+                    <h1 class="text-4xl font-bold text-white mb-6">Добро пожаловать</h1>
+                    <p class="text-xl text-white mb-8">Это магазин с горизонтальной прокруткой</p>
+                    <p class="text-white animate-bounce">← Прокрутите вправо →</p>
+                </div>
+            </section>
+
+            <!-- Секция 2 -->
+            <section class="section bg-transparent">
+                <div class="text-center p-8">
+                    <h2 class="text-3xl font-bold text-white mb-6">О нас</h2>
+                    <p class="text-lg text-white max-w-md">
+                        Мы предлагаем лучшие товары с нестандартной навигацией по магазину.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Секция 3 - Товары -->
+            <section class="section bg-transparent p-4 products-section">
+                <div class="w-full h-full flex flex-col items-center">
+                    <h2 class="text-3xl font-bold text-white mb-8 text-center">Наши товары</h2>
+                    <div id="products-container"
+                        class="products-container grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full px-4">
+                        <!-- Товары будут подгружаться сюда из JSON -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Секция 4 -->
+            <section class="section bg-transparent">
+                <div class="text-center p-8">
+                    <h2 class="text-3xl font-bold text-white mb-6">Контакты</h2>
+                    <p class="text-lg text-white mb-4">Email: shop@example.com</p>
+                    <p class="text-lg text-white">Телефон: +7 (123) 456-78-90</p>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Индикатор прогресса -->
+    <div class="fixed bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-30">
+        <div class="w-3 h-3 rounded-full bg-white bg-opacity-50 cursor-pointer" onclick="scrollToSection(0)"></div>
+        <div class="w-3 h-3 rounded-full bg-white bg-opacity-50 cursor-pointer" onclick="scrollToSection(1)"></div>
+        <div class="w-3 h-3 rounded-full bg-white bg-opacity-50 cursor-pointer" onclick="scrollToSection(2)"></div>
+        <div class="w-3 h-3 rounded-full bg-white bg-opacity-50 cursor-pointer" onclick="scrollToSection(3)"></div>
+    </div>
+
+    <script>
+        // Корзина
+        let cart = [];
+
+        // Функция для переключения отображения корзины
+        function toggleCart() {
+            const cartSidebar = document.getElementById('cart-sidebar');
+            cartSidebar.classList.toggle('translate-x-full');
+        }
+
+        // Функция добавления товара в корзину
+        function addToCart(name, price, quantity) {
+            // Проверяем, есть ли уже такой товар в корзине
+            const existingItem = cart.find(item => item.name === name);
+
+            if (existingItem) {
+                existingItem.quantity += quantity;
+            } else {
+                cart.push({ name, price, quantity });
+            }
+
+            updateCart();
+            showAddedToCart(name);
+        }
+
+        // Функция удаления товара из корзины
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            updateCart();
+        }
+
+        // Функция обновления отображения корзины
+        function updateCart() {
+            const cartItems = document.getElementById('cart-items');
+            const cartCount = document.getElementById('cart-count');
+            const cartTotal = document.getElementById('cart-total');
+
+            // Обновляем количество товаров
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            cartCount.textContent = totalItems;
+
+            // Обновляем содержимое корзины
+            if (cart.length === 0) {
+                cartItems.innerHTML = '<p class="text-gray-500 text-center py-10">Корзина пуста</p>';
+                cartTotal.textContent = '0 ₽';
+                return;
+            }
+
+            let itemsHTML = '';
+            let total = 0;
+
+            cart.forEach((item, index) => {
+                const itemTotal = item.price * item.quantity;
+                total += itemTotal;
+
+                itemsHTML += `
+                    <div class="cart-item flex justify-between items-center border-b py-3">
+                        <div>
+                            <h4 class="font-medium">${item.name}</h4>
+                            <div class="flex items-center mt-1">
+                                <button onclick="changeQuantity(${index}, -1)" class="text-gray-500 hover:text-gray-700 w-6 h-6 flex items-center justify-center border rounded">
+                                    -
+                                </button>
+                                <span class="mx-2">${item.quantity}</span>
+                                <button onclick="changeQuantity(${index}, 1)" class="text-gray-500 hover:text-gray-700 w-6 h-6 flex items-center justify-center border rounded">
+                                    +
+                                </button>
+                                <span class="ml-4 font-medium">${itemTotal.toLocaleString()} ₽</span>
+                            </div>
+                        </div>
+                        <button onclick="removeFromCart(${index})" class="cart-item-remove text-red-500 hover:text-red-700 ml-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                `;
+            });
+
+            cartItems.innerHTML = itemsHTML;
+            cartTotal.textContent = `${total.toLocaleString()} ₽`;
+        }
+
+        // Функция изменения количества товара
+        function changeQuantity(index, change) {
+            const newQuantity = cart[index].quantity + change;
+
+            if (newQuantity < 1) {
+                removeFromCart(index);
+            } else {
+                cart[index].quantity = newQuantity;
+                updateCart();
+            }
+        }
+
+        // Функция показа уведомления о добавлении в корзину
+        function showAddedToCart(name) {
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-20 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg z-50 animate-fade-in-out';
+            notification.textContent = `${name} добавлен в корзину`;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.classList.add('opacity-0', 'transition-opacity', 'duration-300');
+                setTimeout(() => notification.remove(), 300);
+            }, 2000);
+        }
+
+        // Навигация по секциям
+        function scrollToSection(index) {
+            const container = document.querySelector('.container');
+            const sectionWidth = window.innerWidth;
+            container.scrollTo({
+                left: sectionWidth * index,
+                behavior: 'smooth'
+            });
+        }
+
+        // Навигация клавиатурой
+        document.addEventListener('keydown', (e) => {
+            const container = document.querySelector('.container');
+            const sectionWidth = window.innerWidth;
+            const currentScroll = container.scrollLeft;
+
+            if (e.key === 'ArrowRight') {
+                container.scrollTo({
+                    left: currentScroll + sectionWidth,
+                    behavior: 'smooth'
+                });
+            } else if (e.key === 'ArrowLeft') {
+                container.scrollTo({
+                    left: currentScroll - sectionWidth,
+                    behavior: 'smooth'
+                });
+            }
+        });
+    </script>
+    <script>
+        // Загрузка товаров из JSON
+        fetch('products.json')
+            .then(response => response.json())
+            .then(products => {
+                const container = document.getElementById('products-container');
+                container.innerHTML = ''; // Очищаем
+
+                products.forEach(product => {
+                    const productEl = document.createElement('div');
+                    productEl.className = `
+        bg-gray-50 border border-gray-200 rounded-md 
+        p-5 flex flex-col transition duration-300 ease-in-out 
+        hover:border-gray-400 hover:bg-gray-100 h-full
+    `;
+
+                    productEl.innerHTML = `
+        <div class="bg-gradient-to-br ${product.image} h-40 mb-3 rounded-sm flex items-center justify-center">
+            <span class="text-gray-400 text-xs uppercase tracking-wide">Изображение</span>
+        </div>
+
+        <h3 class="text-base font-medium text-gray-800 mb-1">${product.name}</h3>
+        <p class="text-sm text-gray-500 flex-grow">${product.description}</p>
+
+        <div class="flex justify-between items-center mt-4">
+            <span class="text-sm font-semibold text-gray-900">${product.price.toLocaleString()} ₽</span>
+
+            <button onclick="addToCart('${product.name}', ${product.price}, 1)"
+                class="flex items-center gap-1 border border-gray-300 text-gray-700 text-xs px-3 py-1.5 rounded-md hover:bg-gray-200 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                В корзину
+            </button>
+        </div>
+    `;
+
+                    container.appendChild(productEl);
+                });
+
+            })
+            .catch(error => {
+                console.error('Ошибка при загрузке товаров:', error);
+                document.getElementById('products-container').innerHTML = `
+                    <div class="col-span-2 text-center text-white">
+                        <p class="text-lg">Не удалось загрузить товары. Пожалуйста, попробуйте позже.</p>
+                    </div>
+                `;
+            });
+    </script>
+
+</body>
+
+</html>

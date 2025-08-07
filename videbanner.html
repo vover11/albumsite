@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://vjs.zencdn.net/7.17.0/video-js.css" rel="stylesheet">
+  <title>Ваше видео</title>
+  <style>
+    @font-face {
+      font-family: 'IntegralCF-Bold';
+      src: url('https://fonts.cdnfonts.com/css/integralcf') format('woff2');
+      font-weight: bold;
+      font-style: normal;
+    }
+    
+    body, html {
+      height: 100%;
+      margin: 0;
+    }
+    .video-container {
+      width: 100vw;
+      height: 100%;
+      overflow: hidden;
+      position: relative;
+    }
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .text-overlay {
+      position: absolute;
+      bottom: 90px; /* Располагаем текст 20px от нижнего края */
+      left: 50%;
+      transform: translateX(-50%); /* Только по горизонтали */
+      font-family: 'IntegralCF-Bold', sans-serif;
+      font-size: 15vw;
+      color: white;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+  </style>
+</head>
+<body>
+
+<div class="video-container">
+  <video id="my-video" preload="auto" playsinline autoplay muted loop>
+    <source src="https://morphiq.ru/alisa2.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+  <div class="text-overlay">anke gallery</div>
+</div>
+
+</body>
+</html>
